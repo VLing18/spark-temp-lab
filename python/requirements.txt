@@ -1,0 +1,39 @@
+# =============================================================================
+# requirements.txt - DEPENDENCIAS PYTHON DEL PROYECTO FAVISA
+# =============================================================================
+# Instalación: pip install -r requirements.txt
+# En Docker: se instala automáticamente durante el build del Dockerfile
+# =============================================================================
+
+# ── CONEXIÓN A SQL SERVER ─────────────────────────────────────────────────────
+# pyodbc: conector Python → SQL Server via ODBC Driver 18
+# Requiere que el ODBC Driver de Microsoft esté instalado (ver Dockerfile)
+pyodbc==5.0.1
+
+# ── APACHE SPARK (PYSPARK) ───────────────────────────────────────────────────
+# PySpark: API Python para Apache Spark
+# Versión 3.5 coincide con la imagen bitnami/spark:3.5 del docker-compose
+pyspark==3.5.1
+
+# ── MANIPULACIÓN DE DATOS ────────────────────────────────────────────────────
+# pandas: para leer resultados de SQL y manipular DataFrames en Streamlit
+pandas==2.1.4
+
+# numpy: dependencia de pandas y cálculos numéricos
+numpy==1.26.4
+
+# ── DASHBOARD WEB ────────────────────────────────────────────────────────────
+# streamlit: framework para crear dashboards web rápidamente en Python
+# Sin necesidad de HTML/JS/CSS
+streamlit==1.31.0
+
+# ── UTILIDADES ───────────────────────────────────────────────────────────────
+# python-dotenv: para cargar variables de entorno desde .env (desarrollo local)
+python-dotenv==1.0.0
+
+# sqlalchemy: ORM que usa pandas para read_sql() con pyodbc
+# (pandas.read_sql necesita sqlalchemy o una conexión directa)
+sqlalchemy==2.0.25
+
+# pyarrow: acelera transferencia de datos entre pandas y spark
+pyarrow==14.0.2

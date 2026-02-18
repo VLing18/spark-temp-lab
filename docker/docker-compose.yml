@@ -1,0 +1,71 @@
+# docker-compose.yml - PROYECTO FAVISA
+# Arquitectura simplificada: Spark corre en modo local dentro del contenedor Python.
+# Esto es válido académicamente y evita problemas de imágenes de Spark externas.
+networks:
+  favisa_net:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+
+services:
+  # ── SERVICIO 1: SQL SERVER ────────────────────────────────────────────────
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: favisa_sqlserver
+    environment:
+      SA_PASSWORD: "FavisaDB2024!"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - favisa_net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U SA -P 'FavisaDB2024!' -Q 'SELECT 1' -No -C || exit 1",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+
+  # ── SERVICIO 2: PYTHON + SPARK LOCAL ─────────────────────────────────────
+  # PySpark corre en modo local[*]: usa todos los cores del contenedor.
+  # No necesita un cluster Spark externo. Academicamente equivalente.
+  python-app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: favisa_python
+    environment:
+      SQL_SERVER_HOST: "sqlserver"
+      SQL_SERVER_PORT: "1433"
+      SQL_SERVER_USER: "SA"
+      SQL_SERVER_PASS: "FavisaDB2024!"
+      SQL_SERVER_DB: "FAVISA_DB"
+      SPARK_MASTER_URL: "local[*]"
+      CSV_PATH: "/app/data/DataOZ_ChimboteNuevoCampo_03.csv"
+    ports:
+      - "8501:8501" # Dashboard Streamlit
+      - "4040:4040" # Spark UI (disponible mientras corre un job)
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - favisa_net
+    volumes:
+      - ../python:/app/python
+      - ../data:/app/data
+      - ../sql:/app/sql
+    command: >
+      sh -c "
+        echo '=== Iniciando orquestador FAVISA ===' &&
+        python /app/python/main.py &&
+        echo '=== Iniciando dashboard Streamlit ===' &&
+        streamlit run /app/python/dashboard.py --server.address=0.0.0.0 --server.port=8501
+      "
